@@ -103,6 +103,14 @@ var getBoard=function(board){
 	$("#view").html("<h1>Loading ...OK!!</h1>");
 	window.doc=board; //debug
 	window.title=board.name;
+	
+	var lMembers = board.members.reduce(function(map, obj) {
+		map[obj.id] = obj;
+		return map;
+	}, {});
+	
+	console.log(lMembers);
+
 	_.each(board.cards,function(card){ //iterate on cards
 		_.each(card.idChecklists,function(listId){ //iterate on checklists
 			var list=_.find(board.checklists,function(check){ //Find list
