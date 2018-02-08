@@ -6,7 +6,10 @@ if (typeof console === "undefined" || typeof console.log === "undefined") { //Fi
 
 $(document).ready(function(){
 	var defaultOptions = {
+		type: 'popup',
+		name: 'LCA new Trello view',
         scope: {
+			read: true,
             write: false
         },
         success: initDoc
@@ -25,6 +28,7 @@ $(document).ready(function(){
     
 	$(window).bind("hashchange",router);
 });
+
 
 var initDoc=function () {
 	if (!Trello.authorized()) return Trello.authorize(defaultOptions);
