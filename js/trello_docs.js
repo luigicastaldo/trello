@@ -104,7 +104,7 @@ var getBoard=function(board){
 	window.doc=board; //debug
 	window.title=board.name;
 	
-	var filteredLists = function(board.lists){
+	var filteredLists = function(){
 		
 		var temp = {};
 		
