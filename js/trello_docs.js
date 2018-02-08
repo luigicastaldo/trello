@@ -111,7 +111,7 @@ var getBoard=function(board){
 		for(var i = 0; i < board.lists.length; i++) {
 			
 			if(board.lists[i].name == "To Do" || board.lists[i].name == "In Progress" || board.lists[i].name == "Done")
-				temp{board.lists[i].id} = board.lists[i].name
+				temp[board.lists[i].id] = board.lists[i].name
 			
 		}
 		
