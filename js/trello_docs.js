@@ -104,8 +104,24 @@ var getBoard=function(board){
 	window.doc=board; //debug
 	window.title=board.name;
 	
+	var filteredLists = function(){
+		
+		var temp = {};
+		
+		for(var i = 0; i < board.lists.length; i++) {
+			
+			temp{board.lists[i].id} = board.lists[i].name
+			
+		}
+		
+		return temp;
+		
+	};
+	
+	
 	var lMembers = board.members.reduce(function(map, obj) {
 		map[obj.id] = obj;
+		obj.lists = filteredLists;
 		return map;
 	}, {});
 	
@@ -136,12 +152,6 @@ var getBoard=function(board){
 			card.checklist.push(str);
 		});//iterate on checklists
 
-		card.members=_.map(card.idMembers,function(id){ // iterate on members
-			var member=_.find(board.members, function(m) {
-				return m.id==id;
-			});
-			return member.username;
-		});// iterate on members
 	});//iterate on cards
 
 	// Second Init Cards
