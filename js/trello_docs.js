@@ -115,6 +115,8 @@ var getBoard=function(board){
 			
 		}
 		
+		console.log(temp);
+		
 		return temp;
 		
 	};
@@ -122,6 +124,7 @@ var getBoard=function(board){
 	
 	var lMembers = board.members.reduce(function(map, obj) {
 		map[obj.id] = obj;
+		console.log(filteredLists);
 		obj.lists = filteredLists;
 		return map;
 	}, {});
