@@ -159,7 +159,7 @@ var getBoard=function(board){
 		
 		_.each(card.idMembers, function(user){
 			
-			if(card.idList in filteredLists)
+			if((card.idList in filteredLists) && user != "56fec32951e64568882bc201")
 				lMembers[user].lists[card.idList].cards.push(card);
 			
 		});
@@ -205,7 +205,7 @@ var getBoard=function(board){
 	var htmltemplate="<h1><span id='download'></span><span id='trello-link'></span><span id='printme'></span>{{name}} <span class='right'>{{#formatDate}}now{{/formatDate}}</span></h1>{{#lists}}<table><caption><h2>{{name}} <span class='show right'>{{size}}</span></h2></caption>{{#show}}<col width='20%' /><col width='30%' /><col width='5%' /><col width='25%' /><col width='5%' /><col width='10%' /><col width='5%' /><thead><tr>{{#displayColumns}}<th scope='col'>{{.}}</th>{{/displayColumns}}</tr></thead>{{/show}}<tbody>{{#cards}}<tr><td scope='row'><b>{{name}}</b></td><td><div class='comments'>{{#formatComments}}{{desc}}{{/formatComments}}</div></td><td>{{#formatDate}}{{due}}{{/formatDate}}</td><td>{{#checklist}}<div>{{{.}}}</div>{{/checklist}}</td><td>{{#members}}<div>{{.}}</div>{{/members}}</td><td>{{#labels}}<div class='show {{color}}'>{{name}}&nbsp;</div>{{/labels}}</td><td>{{badges.votes}}</td></tr>{{/cards}}</tbody></table>{{/lists}}";
 	var csvtemplate="";//TODO
 
-	var str=Mustache.render(htmltemplate,board);
+	var str=Mustache.render(htmltemplate,lMembers);
 	$("#view").html(str);
 
 	// Download Button
