@@ -159,7 +159,8 @@ var getBoard=function(board){
 		
 		_.each(card.idMembers, function(user){
 			
-			lMembers[user].lists[card.idList].cards.push(card);
+			if(card.idList in filteredLists)
+				lMembers[user].lists[card.idList].cards.push(card);
 			
 		});
 		
