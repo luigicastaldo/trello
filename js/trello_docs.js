@@ -128,7 +128,7 @@ var getBoard=function(board){
 	
 	var lMembers = board.members.reduce(function(map, obj) {
 		map[obj.id] = obj;
-		obj.lists = filteredLists;
+		obj.lists = filterList();
 		return map;
 	}, {});
 
