@@ -207,7 +207,7 @@ var getBoard=function(board){
 	board.displayColumns=["Name","Description","Due Date","Checklists","Members","Labels","Votes"];
 	//var htmltemplate="<h1><span id='download'></span><span id='trello-link'></span><span id='printme'></span>{{name}} <span class='right'>{{#formatDate}}now{{/formatDate}}</span></h1>{{#lists}}<table><caption><h2>{{name}} <span class='show right'>{{size}}</span></h2></caption>{{#show}}<col width='20%' /><col width='30%' /><col width='5%' /><col width='25%' /><col width='5%' /><col width='10%' /><col width='5%' /><thead><tr>{{#displayColumns}}<th scope='col'>{{.}}</th>{{/displayColumns}}</tr></thead>{{/show}}<tbody>{{#cards}}<tr><td scope='row'><b>{{name}}</b></td><td><div class='comments'>{{#formatComments}}{{desc}}{{/formatComments}}</div></td><td>{{#formatDate}}{{due}}{{/formatDate}}</td><td>{{#checklist}}<div>{{{.}}}</div>{{/checklist}}</td><td>{{#members}}<div>{{.}}</div>{{/members}}</td><td>{{#labels}}<div class='show {{color}}'>{{name}}&nbsp;</div>{{/labels}}</td><td>{{badges.votes}}</td></tr>{{/cards}}</tbody></table>{{/lists}}";
 	
-	var htmltemplate = "<h1>Demo</h1>"+"<div class="content">{{#lMembers}}<div class="cl-container"><div class="cl-container-header"><h3>{{initials}}</h3><hr></div>  </div>{{/lMembers}}</div>";
+	var htmltemplate = "<h1>Demo</h1><div>{{#lMembers}}<div><div><h3>{{initials}}</h3><hr></div></div>{{/lMembers}}</div>";
 	var csvtemplate="";//TODO
 
 	var str=Mustache.render(htmltemplate,lMembers);
