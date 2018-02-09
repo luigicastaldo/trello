@@ -110,12 +110,15 @@ var getBoard=function(board){
 		
 		for(var i = 0; i < board.lists.length; i++) {
 			
-			if(board.lists[i].name == "To Do" || board.lists[i].name == "In Progress" || board.lists[i].name == "Done")
-				temp[board.lists[i].id] = board.lists[i].name
+			var lista = {};
+			
+			if(board.lists[i].name == "To Do" || board.lists[i].name == "In Progress" || board.lists[i].name == "Done"){
+				lista.name = board.lists[i].name;
+				lista.cards = [];
+				temp[board.lists[i].id] = lista;
+			}
 			
 		}
-		
-		console.log(temp);
 		
 		return temp;
 		
@@ -125,12 +128,9 @@ var getBoard=function(board){
 	
 	var lMembers = board.members.reduce(function(map, obj) {
 		map[obj.id] = obj;
-		console.log(filteredLists);
 		obj.lists = filteredLists;
 		return map;
 	}, {});
-	
-	console.log(lMembers);
 
 	_.each(board.cards,function(card){ //iterate on cards
 		_.each(card.idChecklists,function(listId){ //iterate on checklists
@@ -156,9 +156,17 @@ var getBoard=function(board){
 			card.checklist=card.checklist||[]; //Make array
 			card.checklist.push(str);
 		});//iterate on checklists
-
+		
+		_.each(card.idMembers, function(user){
+			
+			lMembers[user].lists[card.idList].push(card);
+			
+		});
+		
 	});//iterate on cards
 
+	console.log(lMembers);
+	
 	// Second Init Cards
 	var listofcards=_.groupBy(board.cards, function(card){
 		return card.idList;
