@@ -155,6 +155,8 @@ var getBoard=function(board){
 	lMembers[unassignedUser.id] = unassignedUser;
 	
 	console.log(lMembers);
+	var currentDate = new Date();
+	var cardDate;
 	
 	_.each(board.cards,function(card){ //iterate on cards
 		_.each(card.idChecklists,function(listId){ //iterate on checklists
@@ -181,19 +183,23 @@ var getBoard=function(board){
 			//card.checklist.push(str);
 		});//iterate on checklists
 		
-		if(card.idMembers.length == 0 && (card.idList in listIdToIndex)){
-			
-			lMembers[unassignedUser.id].lists[listIdToIndex[card.idList]].cards.push(card);
-			
-		}
-		else{
-			_.each(card.idMembers, function(user){
+		cardDate = new Date(card.dateLastActivity);
+		
+		if((currentDate.getTime() - 2629746000) <= cardDate.getTime()){ //Showing cards active in the last month (ms 2629746000)
+			if(card.idMembers.length == 0 && (card.idList in listIdToIndex)){
 				
-				if((card.idList in listIdToIndex) && user != "56fec32951e64568882bc201"){
-					lMembers[user].lists[listIdToIndex[card.idList]].cards.push(card);
-				}
+				lMembers[unassignedUser.id].lists[listIdToIndex[card.idList]].cards.push(card);
 				
-			});
+			}
+			else{
+				_.each(card.idMembers, function(user){
+					
+					if((card.idList in listIdToIndex) && user != "56fec32951e64568882bc201"){
+						lMembers[user].lists[listIdToIndex[card.idList]].cards.push(card);
+					}
+					
+				});
+			}
 		}
 		
 	});//iterate on cards
