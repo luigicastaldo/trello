@@ -4,9 +4,10 @@ if (typeof console === "undefined" || typeof console.log === "undefined") { //Fi
  console.log = function() {};
 } 
 
+  
 $(document).ready(function(){
+	
 	var defaultOptions = {
-		type: 'popup',
 		name: 'LCA new Trello view',
         scope: {
 			read: true,
@@ -97,6 +98,7 @@ var listBoards=function(){
 };
 
 var getBoard=function(board){
+	
   $("#view").empty();
   $("#view").html("<h1>Loading ...</h1>");
   Trello.get("/boards/"+board,{cards:"open",lists:"open",checklists:"all",members:"all"},function(board){
@@ -104,9 +106,12 @@ var getBoard=function(board){
 	window.doc=board; //debug
 	window.title=board.name;
 	
+	var listIdToIndex = {};
+	
 	function filterList(){
 		
-		var temp = {};
+		var temp = [];
+		var j = 0;
 		
 		for(var i = 0; i < board.lists.length; i++) {
 			
@@ -115,7 +120,11 @@ var getBoard=function(board){
 			if(board.lists[i].name == "To Do" || board.lists[i].name == "In Progress" || board.lists[i].name == "Done"){
 				lista.name = board.lists[i].name;
 				lista.cards = [];
-				temp[board.lists[i].id] = lista;
+				lista.index = j;
+				lista.id = board.lists[i].id;
+				listIdToIndex[board.lists[i].id] = j;
+				j++;
+				temp.push(lista);
 			}
 			
 		}
@@ -126,12 +135,27 @@ var getBoard=function(board){
 	
 	var filteredLists = filterList();
 	
+	var unassignedUser = {};
+	unassignedUser['id'] = "unassigned";
+	unassignedUser['avatarHash'] = "";
+	unassignedUser['confirmed'] = true;
+	unassignedUser['fullName'] = "Senza Nome";
+	unassignedUser['initials'] = "No User";
+	unassignedUser.lists = filterList();
+	
 	var lMembers = board.members.reduce(function(map, obj) {
-		map[obj.id] = obj;
-		obj.lists = filterList();
+		
+		if(obj.id != "56fec32951e64568882bc201"){
+			map[obj.id] = obj;
+			obj.lists = filterList();
+		}
 		return map;
 	}, {});
 
+	lMembers[unassignedUser.id] = unassignedUser;
+	
+	console.log(lMembers);
+	
 	_.each(board.cards,function(card){ //iterate on cards
 		_.each(card.idChecklists,function(listId){ //iterate on checklists
 			var list=_.find(board.checklists,function(check){ //Find list
@@ -157,19 +181,25 @@ var getBoard=function(board){
 			//card.checklist.push(str);
 		});//iterate on checklists
 		
-		_.each(card.idMembers, function(user){
+		if(card.idMembers.length == 0 && (card.idList in listIdToIndex)){
 			
-			console.log(user);
-			if((card.idList in filteredLists) && user != "56fec32951e64568882bc201"){
-				console.log(user);
-				lMembers[user].lists[card.idList].cards.push(card);
-			}
+			lMembers[unassignedUser.id].lists[listIdToIndex[card.idList]].cards.push(card);
 			
-		});
+		}
+		else{
+			_.each(card.idMembers, function(user){
+				
+				if((card.idList in listIdToIndex) && user != "56fec32951e64568882bc201"){
+					lMembers[user].lists[listIdToIndex[card.idList]].cards.push(card);
+				}
+				
+			});
+		}
 		
 	});//iterate on cards
-
-	console.log(lMembers);
+	
+	board.users = _.values(lMembers);
+	console.log(board.users);
 	
 	// Second Init Cards
 	var listofcards=_.groupBy(board.cards, function(card){
@@ -180,7 +210,6 @@ var getBoard=function(board){
 		list.size=list.cards?list.cards.length:0;
 		list.show=(list.size>0);
 	});
-	console.log(board);
 
 	// Date function
 	board.formatDate=function(){
@@ -207,11 +236,13 @@ var getBoard=function(board){
 	board.displayColumns=["Name","Description","Due Date","Checklists","Members","Labels","Votes"];
 	//var htmltemplate="<h1><span id='download'></span><span id='trello-link'></span><span id='printme'></span>{{name}} <span class='right'>{{#formatDate}}now{{/formatDate}}</span></h1>{{#lists}}<table><caption><h2>{{name}} <span class='show right'>{{size}}</span></h2></caption>{{#show}}<col width='20%' /><col width='30%' /><col width='5%' /><col width='25%' /><col width='5%' /><col width='10%' /><col width='5%' /><thead><tr>{{#displayColumns}}<th scope='col'>{{.}}</th>{{/displayColumns}}</tr></thead>{{/show}}<tbody>{{#cards}}<tr><td scope='row'><b>{{name}}</b></td><td><div class='comments'>{{#formatComments}}{{desc}}{{/formatComments}}</div></td><td>{{#formatDate}}{{due}}{{/formatDate}}</td><td>{{#checklist}}<div>{{{.}}}</div>{{/checklist}}</td><td>{{#members}}<div>{{.}}</div>{{/members}}</td><td>{{#labels}}<div class='show {{color}}'>{{name}}&nbsp;</div>{{/labels}}</td><td>{{badges.votes}}</td></tr>{{/cards}}</tbody></table>{{/lists}}";
 	
-	var htmltemplate = "<h1>Demo</h1><div>{{#lMembers}}<div><div><h3>{{initials}}</h3><hr></div></div>{{/lMembers}}</div>";
+	var htmltemplate = "<h1>Board per user</h1><div class='content'>{{#users}}<div class='cl-container'><h3>{{initials}}</h3>{{#lists}}<div class='cl-container-header'><h3>{{name}}</h3><hr><ul class='cl-container-body'>{{#cards}}<li class='cl-li'>{{name}}</li>{{/cards}}</ul></div>{{/lists}}</div>{{/users}}</div>";
 	var csvtemplate="";//TODO
 
-	var str=Mustache.render(htmltemplate,lMembers);
+	var str=Mustache.render(htmltemplate,board);
 	$("#view").html(str);
+	
+	$('.content, .cl-container-body').sortable().disableSelection();
 
 	// Download Button
 	var download="<!DOCTYPE html><html><head><meta charset='utf-8' /><title>"+board.name+"</title><style>"+$("style").text()+"</style></head><body>"+str+"</body></html>";
