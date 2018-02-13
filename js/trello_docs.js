@@ -102,20 +102,27 @@ var listBoards=function(){
 		});
 		
 		var tempBoard;	
-		var initialLength = myself.orgBoards[0].boards.length;
+		var initialLength;
 		
-		for(var i = 0; i < initialLength; i++) {
+		for(var j = 0; j < myself.orgBoards.length; j++){
 			
-			tempBoard = {};
-			tempBoard.name = myself.orgBoards[0].boards[i].name + ' per Client';
-			tempBoard.closed = myself.orgBoards[0].boards[i].closed;
-			tempBoard.idOrganization = myself.orgBoards[0].boards[i].idOrganization;
-			tempBoard.pinned = myself.orgBoards[0].boards[i].pinned;
-			tempBoard.id = myself.orgBoards[0].boards[i].id;
-			tempBoard.url = '#id=' + myself.orgBoards[0].boards[i].id + '&client=true';
+			initialLength = myself.orgBoards[j].boards.length;
 			
-			myself.orgBoards[0].boards[i].url = '#id=' + myself.orgBoards[0].boards[i].id;
-			myself.orgBoards[0].boards.push(tempBoard);
+			for(var i = 0; i < initialLength; i++) {
+				
+				tempBoard = {};
+				tempBoard.name = myself.orgBoards[j].boards[i].name + ' per Client';
+				tempBoard.closed = myself.orgBoards[j].boards[i].closed;
+				tempBoard.idOrganization = myself.orgBoards[j].boards[i].idOrganization;
+				tempBoard.pinned = myself.orgBoards[j].boards[i].pinned;
+				tempBoard.id = myself.orgBoards[j].boards[i].id;
+				tempBoard.url = '#id=' + myself.orgBoards[j].boards[i].id + '&client=true';
+				
+				myself.orgBoards[j].boards[i].url = '#id=' + myself.orgBoards[j].boards[i].id;
+				myself.orgBoards[j].boards.push(tempBoard);
+				
+			}
+			
 		}
 		
 	}	
