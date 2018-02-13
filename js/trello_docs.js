@@ -8,7 +8,7 @@ if (typeof console === "undefined" || typeof console.log === "undefined") { //Fi
 $(document).ready(function(){
 	
 	var defaultOptions = {
-		name: 'LCA new Trello view',
+		name: 'Custom Trello view',
         scope: {
 			read: true,
             write: false
@@ -49,10 +49,24 @@ var initDoc=function () {
 };
 
 var router=function(){
+	
 	var hash=location.hash.replace("#","");
 	if (hash!=="")
 	{
-		getBoard(hash);
+		var result = hash.split('&');
+		var boardId = result[0].replace('id=',"");
+		
+		if(result.length > 1){
+			
+			getBoardPerClient(boardId);
+			
+		}
+		else{
+		
+			getBoardPerUser(boardId);
+			
+		}
+		
 	}else {
 		if(window.myself){
 			listBoards();
@@ -60,9 +74,11 @@ var router=function(){
 			initDoc();
 		}
 	}
+	
 };
 
 var listBoards=function(){
+	
 	if(!myself.orgBoards) { // Not initiated yet
 		var categories=_.groupBy(myself.boards,function(board){ // Categories Boards
 			var id=board.idOrganization?board.idOrganization:"";
@@ -84,11 +100,28 @@ var listBoards=function(){
 			}
 			return list;
 		});
-	}
-
+		
+		var tempBoard;	
+		var initialLength = myself.orgBoards[0].boards.length;
+		
+		for(var i = 0; i < initialLength; i++) {
+			
+			tempBoard = {};
+			tempBoard.name = myself.orgBoards[0].boards[i].name + ' per Client';
+			tempBoard.closed = myself.orgBoards[0].boards[i].closed;
+			tempBoard.idOrganization = myself.orgBoards[0].boards[i].idOrganization;
+			tempBoard.pinned = myself.orgBoards[0].boards[i].pinned;
+			tempBoard.id = myself.orgBoards[0].boards[i].id;
+			tempBoard.url = '#id=' + myself.orgBoards[0].boards[i].id + '&client=true';
+			
+			myself.orgBoards[0].boards[i].url = '#id=' + myself.orgBoards[0].boards[i].id;
+			myself.orgBoards[0].boards.push(tempBoard);
+		}
+		
+	}	
+	
 	$("#view").empty();
-	var intro="<div class='list info-list'><h2>About Trello2HTML</h2><p>This is an web app to export Trello Boards to HTML, our team uses this to record our progress every month. We do not track or record you any way, and Trello access is read-only. You can host this on any static server. Google Chrome is tested and supported, your mileage may vary with other browsers(Firefox has a bug when downloading).</p><ul><a href='#4d5ea62fd76aa1136000000c'><li>Demo using Trello Development</li></a><a href='trello.zip'><li>Download zipped source</li></a><a href='https://trello.com/board/trello2html/4fb10d0e312c2b226f1eb4a0'><li>Feature Requests and Bug Reports</li></a><a href='http://tianshuohu.diandian.com/post/2012-06-08/Trello-Export-as-html'><li>Blog Article (Chinese/English)</li></a></ul></div>";
-	var template="<h1>{{fullName}} ({{username}})</h1><div id='boardlist'>"+"{{#orgBoards}}<div class='list'><h2>{{name}}</h2><ul>{{#boards}}<a href='#{{id}}' ><li>{{name}}</li></a>{{/boards}}</ul></div>{{/orgBoards}}</div>";
+	var template="<h1>{{fullName}} ({{username}})</h1><div id='boardlist'>"+"{{#orgBoards}}<div class='list'><h2>{{name}}</h2><ul>{{#boards}}<a href='{{url}}' ><li>{{name}}</li></a>{{/boards}}</ul></div>{{/orgBoards}}</div>";
 	var str=Mustache.render(template,myself);
 	$("#view").html(str);
 	$("#boardlist").masonry({
@@ -97,185 +130,207 @@ var listBoards=function(){
 
 };
 
-var getBoard=function(board){
+var getBoardPerUser=function(board){
 	
-  $("#view").empty();
-  $("#view").html("<h1>Loading ...</h1>");
-  Trello.get("/boards/"+board,{cards:"open",lists:"open",checklists:"all",members:"all"},function(board){
-	$("#view").html("<h1>Loading ...OK!!</h1>");
-	window.doc=board; //debug
-	window.title=board.name;
-	
-	var listIdToIndex = {};
-	
-	function filterList(){
+	$("#view").empty();
+	$("#view").html("<h1>Loading ...</h1>");
+  
+	Trello.get("/boards/"+board,{cards:"open",lists:"open",checklists:"all",members:"all"},function(board){
 		
-		var temp = [];
-		var j = 0;
+		$("#view").html("<h1>Loading ...OK!!</h1>");
+		window.doc=board; //debug
+		window.title=board.name;
 		
-		for(var i = 0; i < board.lists.length; i++) {
+		var listIdToIndex = {};
+		
+		function filterList(){
 			
-			var lista = {};
+			var temp = [];
+			var j = 0;
 			
-			if(board.lists[i].name == "To Do" || board.lists[i].name == "In Progress" || board.lists[i].name == "Done"){
-				lista.name = board.lists[i].name;
-				lista.cards = [];
-				lista.index = j;
-				lista.id = board.lists[i].id;
-				listIdToIndex[board.lists[i].id] = j;
-				j++;
-				temp.push(lista);
-			}
-			
-		}
-		
-		return temp;
-		
-	};
-	
-	var filteredLists = filterList();
-	
-	var unassignedUser = {};
-	unassignedUser['id'] = "unassigned";
-	unassignedUser['avatarHash'] = "";
-	unassignedUser['confirmed'] = true;
-	unassignedUser['fullName'] = "Senza Nome";
-	unassignedUser['initials'] = "No User";
-	unassignedUser.lists = filterList();
-	
-	var lMembers = board.members.reduce(function(map, obj) {
-		
-		if(obj.id != "56fec32951e64568882bc201"){
-			map[obj.id] = obj;
-			obj.lists = filterList();
-		}
-		return map;
-	}, {});
-
-	lMembers[unassignedUser.id] = unassignedUser;
-	
-	console.log(lMembers);
-	var currentDate = new Date();
-	var cardDate;
-	
-	_.each(board.cards,function(card){ //iterate on cards
-		_.each(card.idChecklists,function(listId){ //iterate on checklists
-			var list=_.find(board.checklists,function(check){ //Find list
-				return check.id==listId;
-				});
-			if(!list){
-				console.log("ERROR:"+listId+" not found");
-				return;
-			}
-			list.doneNumber=0;
-			list.totalNumber=list.checkItems.length || 0;
-			_.each(list.checkItems,function(item){ //Check complete
-				if(item.state=="complete"){
-					list.doneNumber++;
-					item.complete=true;
-				}else item.complete=false;
-			});
-			list.done=(list.doneNumber==list.totalNumber);
-			var template="<div><b>{{name}}</b> <span class='show right {{#done}}green{{/done}}'>{{doneNumber}}/{{totalNumber}}</span></div><ul>{{#checkItems}}<li>{{#complete}}<del>{{/complete}}{{name}}{{#complete}}</del>{{/complete}}</li>{{/checkItems}}</ul>";
-			var str=Mustache.render(template,list);
-
-			card.checklist=card.checklist||[]; //Make array
-			//card.checklist.push(str);
-		});//iterate on checklists
-		
-		cardDate = new Date(card.dateLastActivity);
-		
-		if((currentDate.getTime() - 2629746000) <= cardDate.getTime()){ //Showing cards active in the last month (ms 2629746000)
-			if(card.idMembers.length == 0 && (card.idList in listIdToIndex)){
+			for(var i = 0; i < board.lists.length; i++) {
 				
-				lMembers[unassignedUser.id].lists[listIdToIndex[card.idList]].cards.push(card);
+				var lista = {};
+				
+				if(board.lists[i].name == "To Do" || board.lists[i].name == "In Progress" || board.lists[i].name == "Done"){
+					lista.name = board.lists[i].name;
+					lista.cards = [];
+					lista.index = j;
+					lista.id = board.lists[i].id;
+					listIdToIndex[board.lists[i].id] = j;
+					j++;
+					temp.push(lista);
+				}
 				
 			}
-			else{
-				_.each(card.idMembers, function(user){
-					
-					if((card.idList in listIdToIndex) && user != "56fec32951e64568882bc201"){
-						lMembers[user].lists[listIdToIndex[card.idList]].cards.push(card);
-					}
-					
-				});
-			}
-		}
-		
-	});//iterate on cards
-	
-	board.users = _.values(lMembers);
-	console.log(board.users);
-	
-	// Second Init Cards
-	var listofcards=_.groupBy(board.cards, function(card){
-		return card.idList;
-	});
-	_.each(board.lists,function(list){
-		list.cards=listofcards[list.id];
-		list.size=list.cards?list.cards.length:0;
-		list.show=(list.size>0);
-	});
-
-	// Date function
-	board.formatDate=function(){
-		return function(text){
-			var date;
-			switch(text){
-			case "":
-				return "None";
-			case "now":
-				date=new Date();
-				break;
-			default:
-				date=new Date(text);
-			}
-			return date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate();
+			
+			return temp;
+			
 		};
-	};
-	board.formatComments=function(){
-		var converter = new Showdown.converter();
-		return converter.makeHtml;
-	};		
-	//
-	// Start Rendering
-	board.displayColumns=["Name","Description","Due Date","Checklists","Members","Labels","Votes"];
-	//var htmltemplate="<h1><span id='download'></span><span id='trello-link'></span><span id='printme'></span>{{name}} <span class='right'>{{#formatDate}}now{{/formatDate}}</span></h1>{{#lists}}<table><caption><h2>{{name}} <span class='show right'>{{size}}</span></h2></caption>{{#show}}<col width='20%' /><col width='30%' /><col width='5%' /><col width='25%' /><col width='5%' /><col width='10%' /><col width='5%' /><thead><tr>{{#displayColumns}}<th scope='col'>{{.}}</th>{{/displayColumns}}</tr></thead>{{/show}}<tbody>{{#cards}}<tr><td scope='row'><b>{{name}}</b></td><td><div class='comments'>{{#formatComments}}{{desc}}{{/formatComments}}</div></td><td>{{#formatDate}}{{due}}{{/formatDate}}</td><td>{{#checklist}}<div>{{{.}}}</div>{{/checklist}}</td><td>{{#members}}<div>{{.}}</div>{{/members}}</td><td>{{#labels}}<div class='show {{color}}'>{{name}}&nbsp;</div>{{/labels}}</td><td>{{badges.votes}}</td></tr>{{/cards}}</tbody></table>{{/lists}}";
+		
+		var unassignedUser = {};
+		unassignedUser['id'] = "unassigned";
+		unassignedUser['avatarHash'] = "";
+		unassignedUser['confirmed'] = true;
+		unassignedUser['fullName'] = "Senza Nome";
+		unassignedUser['initials'] = "No User";
+		unassignedUser.lists = filterList();
+		
+		var lMembers = board.members.reduce(function(map, obj) {
+			
+			if(obj.id != "56fec32951e64568882bc201"){
+				map[obj.id] = obj;
+				obj.lists = filterList();
+			}
+			return map;
+		}, {});
+
+		lMembers[unassignedUser.id] = unassignedUser;
+		
+		var currentDate = new Date();
+		var cardDate;
+		
+		_.each(board.cards,function(card){ //iterate on cards
+			
+			cardDate = new Date(card.dateLastActivity);
+			
+			if((currentDate.getTime() - 2629746000) <= cardDate.getTime()){ //Showing cards active in the last month (ms 2629746000)
+				if(card.idMembers.length == 0 && (card.idList in listIdToIndex)){
+					
+					lMembers[unassignedUser.id].lists[listIdToIndex[card.idList]].cards.push(card);
+					
+				}
+				else{
+					_.each(card.idMembers, function(user){
+						
+						if((card.idList in listIdToIndex) && user != "56fec32951e64568882bc201"){
+							lMembers[user].lists[listIdToIndex[card.idList]].cards.push(card);
+						}
+						
+					});
+				}
+			}
+			
+		});//iterate on cards
+		
+		board.users = _.values(lMembers);
+			
+		var htmltemplate = "<h1>Board per user</h1><div class='content'>{{#users}}<div class='cl-container'><center><h3>{{initials}}</h3></center>{{#lists}}<div class='cl-container-header'><h3>{{name}} <span class = right>{{cards.length}}</span></h3><hr><ul class='cl-container-body'>{{#cards}}<li class='cl-li'>{{name}}</li>{{/cards}}</ul></div>{{/lists}}</div>{{/users}}</div>";
+		var str=Mustache.render(htmltemplate,board);
+		$("#view").html(str);
+		$('.content, .cl-container-body').sortable().disableSelection();
+
+	});
 	
-	var htmltemplate = "<h1>Board per user</h1><div class='content'>{{#users}}<div class='cl-container'><h3>{{initials}}</h3>{{#lists}}<div class='cl-container-header'><h3>{{name}}</h3><hr><ul class='cl-container-body'>{{#cards}}<li class='cl-li'>{{name}}</li>{{/cards}}</ul></div>{{/lists}}</div>{{/users}}</div>";
-	var csvtemplate="";//TODO
+};
 
-	var str=Mustache.render(htmltemplate,board);
-	$("#view").html(str);
+var getBoardPerClient=function(board){
 	
-	$('.content, .cl-container-body').sortable().disableSelection();
+	$("#view").empty();
+	$("#view").html("<h1>Loading ...</h1>");
+  
+	Trello.get("/boards/"+board,{cards:"open",lists:"open",checklists:"all",members:"all"},function(board){
+		
+		$("#view").html("<h1>Loading ...OK!!</h1>");
+		window.doc=board; //debug
+		window.title=board.name;
+		
+		var listIdToIndex = {};
+		var mainClientsToShow = ['Telecom', 'Gestores', 'CGCOM', 'CdJ', 'Notartel'];
+		
+		function filterList(){
+			
+			var temp = [];
+			var j = 0;
+			var lista;
+			
+			for(var i = 0; i < board.lists.length; i++) {
+				
+				lista = {};
+				
+				if(board.lists[i].name == "To Do" || board.lists[i].name == "In Progress" || board.lists[i].name == "Done"){
+					lista.name = board.lists[i].name;
+					lista.cards = [];
+					lista.index = j;
+					lista.id = board.lists[i].id;
+					listIdToIndex[board.lists[i].id] = j;
+					j++;
+					temp.push(lista);
+				}
+				
+			}
+			
+			return temp;
+			
+		};
+		
+		function listClients(){
+			
+			var temp = [];
+			var client;
+			
+			for(var i = 0; i < mainClientsToShow.length; i++) {
+				
+				client = {};
+				client.name = mainClientsToShow[i];
+				client.lists = filterList();
+				client.index = i;
+				client.id = mainClientsToShow[i].toLowerCase();
+				temp.push(client);
+				
+			}
+			
+			return temp;
+			
+		};
+		
+		var clients = listClients();
+		
+		var otherClients = {};
+		otherClients.name = "Others";
+		otherClients.lists = filterList();
+		otherClients.index = mainClientsToShow.length;
+		otherClients.id = "others";
+		clients.push(otherClients);
+		
+		var currentDate = new Date();
+		var cardDate;
+		var found;
+		
+		_.each(board.cards,function(card){ //iterate on cards
+			
+			cardDate = new Date(card.dateLastActivity);
+			found = false;
+			
+			if(((currentDate.getTime() - 2629746000) <= cardDate.getTime()) && (card.idList in listIdToIndex)){ //Showing cards active in the last month (ms 2629746000)
+				
+				for(var i = 0; i < clients.length-1; i++) {
+					
+					if(card.name.toLowerCase().indexOf(clients[i].id) > 0){
+						
+						clients[i].lists[listIdToIndex[card.idList]].cards.push(card);
+						found = true;
+						break;
+					}
+				
+				}
+				
+				if(!found){
+					
+					clients[clients.length-1].lists[listIdToIndex[card.idList]].cards.push(card);
+					
+				}
+			}
+			
+		});//iterate on cards
+		
+		board.clients = clients;
+			
+		var htmltemplate = "<h1>Board per client</h1><div class='content'>{{#clients}}<div class='cl-container'><center><h3>{{name}}</h3></center>{{#lists}}<div class='cl-container-header'><h3>{{name}} <span class = right>{{cards.length}}</span></h3><hr><ul class='cl-container-body'>{{#cards}}<li class='cl-li'>{{name}}</li>{{/cards}}</ul></div>{{/lists}}</div>{{/clients}}</div>";
+		var str=Mustache.render(htmltemplate,board);
+		$("#view").html(str);
+		$('.content, .cl-container-body').sortable().disableSelection();
 
-	// Download Button
-	var download="<!DOCTYPE html><html><head><meta charset='utf-8' /><title>"+board.name+"</title><style>"+$("style").text()+"</style></head><body>"+str+"</body></html>";
-//this may work for firefox using application/data
-//location.href="data:text/html;charset=utf-8,"+encodeURIComponent(download);
-	var button1=$("#download");
-	button1.addClass("downloader");
-	button1.text("Save HTML");
-	button1.click(function(){
-		console.log("saving..");
-		var bb=new BlobBuilder();
-		bb.append(download);
-		var filesaver=saveAs(bb.getBlob("text/html;charset=utf-8"),board.name+"_"+board.formatDate()('now')+".html");
 	});
-		var button2=$("#trello-link");
-	button2.addClass("downloader");
-	button2.text("Trello");
-	button2.click(function(){
-		location=board.url;
-	});
-	var button3=$("#printme");
-	button3.addClass("downloader");
-	button3.text("Print");
-	button3.click(function(){
-		print();
-	});
-
-	//button.click(function(){location.href="data:text/html;charset=utf-8,"+encodeURIComponent(download);});
-	});
+	
 };
