@@ -313,7 +313,7 @@ var getBoardPerClient=function(board){
 				
 				for(var i = 0; i < clients.length-1; i++) {
 					
-					if(card.name.toLowerCase().indexOf(clients[i].id) > 0){
+					if(card.name.toLowerCase().indexOf(clients[i].id) >= 0){
 						
 						clients[i].lists[listIdToIndex[card.idList]].cards.push(card);
 						found = true;
